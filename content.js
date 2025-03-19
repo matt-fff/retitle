@@ -9,7 +9,8 @@ let state = {
   suffix: '',
   originalTitle: null,  // Will be set on first run
   actualOriginalTitle: null, // The true original title without any modifications
-  observer: null
+  observer: null,
+  titleCheckInterval: null
 };
 
 // Function to capture the original title (only called once)
@@ -118,6 +119,38 @@ function setupObserver() {
       childList: true 
     });
   }
+  
+  // Set up a periodic check to ensure title remains consistent
+  setupTitleCheckInterval();
+}
+
+// Set up a periodic check to ensure title remains consistent even if site changes it in ways
+// that bypass the MutationObserver
+function setupTitleCheckInterval() {
+  // Clear any existing interval
+  if (state.titleCheckInterval) {
+    clearInterval(state.titleCheckInterval);
+  }
+  
+  // Check every 2 seconds if the title is as expected
+  state.titleCheckInterval = setInterval(() => {
+    if (state.prefix || state.suffix) { // Only check if we have modifications to apply
+      const expectedTitle = (state.prefix || '') + state.originalTitle + (state.suffix || '');
+      
+      if (document.title !== expectedTitle) {
+        // Title has been changed by the site, reapply our modifications
+        if (document.title === state.actualOriginalTitle) {
+          // Site reset to original title
+          updateTitle();
+        } else if (!document.title.startsWith(state.prefix) && !document.title.endsWith(state.suffix)) {
+          // Site changed to a completely new title
+          state.actualOriginalTitle = document.title;
+          state.originalTitle = document.title;
+          updateTitle();
+        }
+      }
+    }
+  }, 2000); // Check every 2 seconds
 }
 
 // When the content script loads, notify the background script that we're ready
@@ -135,5 +168,15 @@ chrome.runtime.sendMessage({ action: 'contentScriptReady', url: window.location.
       updateTitle();
       setupObserver();
     }
+  }
+});
+
+// Clean up when the page is unloaded
+window.addEventListener('unload', () => {
+  if (state.titleCheckInterval) {
+    clearInterval(state.titleCheckInterval);
+  }
+  if (state.observer) {
+    state.observer.disconnect();
   }
 });

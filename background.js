@@ -9,10 +9,18 @@ let settings = {
 // Track tabs where content script is ready
 let readyTabs = new Set();
 
+// Interval for periodic title check
+let periodicCheckInterval = null;
+
 // Load settings from storage when extension starts
 chrome.storage.sync.get(['prefix', 'suffix'], (result) => {
   if (result.prefix !== undefined) settings.prefix = result.prefix;
   if (result.suffix !== undefined) settings.suffix = result.suffix;
+  
+  // Start periodic check if we have settings
+  if (settings.prefix || settings.suffix) {
+    startPeriodicCheck();
+  }
 });
 
 // Listen for changes to storage
@@ -26,6 +34,13 @@ chrome.storage.onChanged.addListener((changes) => {
   
   // Apply changes to all tabs when settings change
   applyToAllTabs();
+  
+  // Start or stop periodic check based on settings
+  if (settings.prefix || settings.suffix) {
+    startPeriodicCheck();
+  } else {
+    stopPeriodicCheck();
+  }
 });
 
 // Function to send update message to a content script
@@ -102,6 +117,29 @@ function applyToAllTabs() {
       }
     }
   });
+}
+
+// Function to start periodic check of all tabs
+function startPeriodicCheck() {
+  // Clear any existing interval
+  stopPeriodicCheck();
+  
+  // Check all tabs every 30 seconds
+  periodicCheckInterval = setInterval(() => {
+    // Only do this if we have settings to apply
+    if (settings.prefix || settings.suffix) {
+      console.log('Performing periodic title check on all tabs');
+      applyToAllTabs();
+    }
+  }, 30000); // Check every 30 seconds
+}
+
+// Function to stop periodic check
+function stopPeriodicCheck() {
+  if (periodicCheckInterval) {
+    clearInterval(periodicCheckInterval);
+    periodicCheckInterval = null;
+  }
 }
 
 // Listen for messages from popup and content scripts
