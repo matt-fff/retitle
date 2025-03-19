@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="./popup.css" />
+  </head>
+  <body>
+    <h1>Tab Retitle</h1>
+    
+    <div class="config-section">
+      <h2>Configure Tab Titles</h2>
+      <div class="input-group">
+        <label for="prefix">Prefix:</label>
+        <input type="text" id="prefix" placeholder="Add prefix..." />
+      </div>
+      
+      <div class="input-group">
+        <label for="suffix">Suffix:</label>
+        <input type="text" id="suffix" placeholder="Add suffix..." />
+      </div>
+      
+      <div class="buttons">
+        <button id="save-btn">Save Settings</button>
+      </div>
+    </div>
+    
+    <div class="status-message" id="status"></div>
+    
+    <script src="./popup.js" type="module"></script>
+  </body>
+</html>
