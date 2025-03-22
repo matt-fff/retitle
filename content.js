@@ -36,8 +36,26 @@ function updateTitle() {
   // Get the clean title (without any modifications)
   let cleanTitle = getCleanTitle();
   
-  // Apply the prefix and suffix
-  let newTitle = (state.prefix || '') + cleanTitle + (state.suffix || '');
+  // Check if the title already starts with the prefix
+  let titleToUse = cleanTitle;
+  let prefix = state.prefix || '';
+  let suffix = state.suffix || '';
+  
+  // Apply the prefix and suffix only if they're not already present
+  let newTitle = '';
+  
+  // Add prefix if it's not already at the beginning of the title
+  if (prefix && !titleToUse.startsWith(prefix)) {
+    newTitle += prefix;
+  }
+  
+  // Add the main title content
+  newTitle += titleToUse;
+  
+  // Add suffix if it's not already at the end of the title
+  if (suffix && !titleToUse.endsWith(suffix)) {
+    newTitle += suffix;
+  }
   
   // Only update if necessary
   if (document.title !== newTitle) {
