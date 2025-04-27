@@ -13,19 +13,18 @@ let state = {
   titleCheckInterval: null
 };
 
-// Function to capture the original title (only called once)
+// Function to capture the original title (always updates)
 function captureOriginalTitle() {
-  if (state.actualOriginalTitle === null) {
-    state.actualOriginalTitle = document.title;
-    state.originalTitle = document.title;
-    console.log('Captured original title:', state.actualOriginalTitle);
-  }
+  // Always update the title to the current document title
+  state.actualOriginalTitle = document.title;
+  state.originalTitle = document.title;
+  console.debug('Updated original title:', state.actualOriginalTitle);
 }
 
 // Function to get the clean title without any prefix/suffix
 function getCleanTitle() {
-  // Always start with the actual original title
-  return state.actualOriginalTitle || document.title;
+  // Always use the current document title
+  return document.title;
 }
 
 // Function to apply prefix and suffix to the title
@@ -69,9 +68,6 @@ function updateTitle() {
 // Listen for messages from the background script
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.action === 'updateTitle') {
-    // Capture original title if not already done
-    captureOriginalTitle();
-    
     // Update our state with new prefix/suffix
     state.prefix = message.prefix || '';
     state.suffix = message.suffix || '';
@@ -101,25 +97,11 @@ function setupObserver() {
   
   state.observer = new MutationObserver(() => {
     // If the title has changed, we need to check what happened
-    const expectedTitle = (state.prefix || '') + state.originalTitle + (state.suffix || '');
+    // Recapture the original title
+    captureOriginalTitle();
     
-    if (document.title !== expectedTitle) {
-      // The page might have changed the title to something new
-      // Check if it's the original title without our modifications
-      if (document.title === state.actualOriginalTitle) {
-        // The page reset to the original title, just reapply our modifications
-        updateTitle();
-      } else if (!document.title.startsWith(state.prefix) && !document.title.endsWith(state.suffix)) {
-        // This is a completely new title set by the page
-        // Update our actual original title reference
-        state.actualOriginalTitle = document.title;
-        state.originalTitle = document.title;
-        
-        // Apply our modifications to this new title
-        updateTitle();
-      }
-      // If it already has our prefix/suffix, leave it alone
-    }
+    // Apply our modifications to the new title
+    updateTitle();
   });
   
   // Start observing the document title
@@ -153,20 +135,11 @@ function setupTitleCheckInterval() {
   // Check every 2 seconds if the title is as expected
   state.titleCheckInterval = setInterval(() => {
     if (state.prefix || state.suffix) { // Only check if we have modifications to apply
-      const expectedTitle = (state.prefix || '') + state.originalTitle + (state.suffix || '');
+      // Always recapture the current title
+      captureOriginalTitle();
       
-      if (document.title !== expectedTitle) {
-        // Title has been changed by the site, reapply our modifications
-        if (document.title === state.actualOriginalTitle) {
-          // Site reset to original title
-          updateTitle();
-        } else if (!document.title.startsWith(state.prefix) && !document.title.endsWith(state.suffix)) {
-          // Site changed to a completely new title
-          state.actualOriginalTitle = document.title;
-          state.originalTitle = document.title;
-          updateTitle();
-        }
-      }
+      // Apply our modifications to the current title
+      updateTitle();
     }
   }, 2000); // Check every 2 seconds
 }
@@ -174,15 +147,14 @@ function setupTitleCheckInterval() {
 // When the content script loads, notify the background script that we're ready
 chrome.runtime.sendMessage({ action: 'contentScriptReady', url: window.location.href }, (response) => {
   if (response && response.settings) {
-    // Capture the original title before applying any modifications
-    captureOriginalTitle();
-    
     // Update our state with settings from background
     state.prefix = response.settings.prefix || '';
     state.suffix = response.settings.suffix || '';
     
     // If we have settings, apply them immediately
     if (state.prefix || state.suffix) {
+      // Capture the current title and apply modifications
+      captureOriginalTitle();
       updateTitle();
       setupObserver();
     }

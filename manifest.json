@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Tab Retitle",
-  "version": "1.0",
+  "version": "1.1",
   "description": "Add prefixes and suffixes to all tab titles",
   "icons": {
     "16": "images/icon-16.png",
